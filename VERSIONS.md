@@ -119,4 +119,4 @@ GCC 线程模型：`single`；LTO 压缩：`zlib`。
 | 结果 | **21 项通过，0 项失败** |
 | 平台 | linux/amd64，Debian 系（dpkg 1.23.7） |
 | 覆盖内容 | 工具可用性、裸名解析、包装层自足性、freestanding 编译、汇编归档、newlib 链接、头文件解析 |
-| 下游复验 | `app-collection/staging/prime-code`（原名 `suika_prime`）用本工具链重建 `primecode.elf`，与上游提交版**逐字节一致**（剥符号表后；均 24644 字节） |
+| 下游复验 | `app-collection/staging/prime-code`（`primecode.elf`，24644 字节）与 `app-collection/examples/cube3d` 均可用本工具链重建 |

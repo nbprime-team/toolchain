@@ -4,10 +4,10 @@
 .text
 
 /*
- * Exact privileged byte-copy/cache-flush primitive used by DOOM's
- * install_input_hack()/remove_input_hack().
+ * DOOM 的 install_input_hack()/remove_input_hack() 所用的精确特权
+ * 字节拷贝/缓存刷新原语。
  *
- * r0 = dst, r1 = src, r2 = byte count
+ * r0 = dst, r1 = src, r2 = 字节数
  */
 .global prime_privileged_memcpy
 .type prime_privileged_memcpy, %function
@@ -17,7 +17,7 @@ prime_privileged_memcpy:
     orr  r5, r4, #128
     msr  cpsr_c, r5
 
-    /* Temporarily grant full domain access, exactly as PureDOOM does. */
+    /* 临时授予完整 domain 访问权限，与 PureDOOM 完全一致。 */
     mrc  p15, 0, r6, c3, c0, 0
     mvn  r5, #0
     mcr  p15, 0, r5, c3, c0, 0
@@ -31,7 +31,7 @@ prime_privileged_memcpy:
     bne  1b
 
 2:
-    /* Same cache/write-buffer maintenance sequence as DOOM. */
+    /* 与 DOOM 相同的缓存/写缓冲维护序列。 */
     mov  r3, #0
     mcr  p15, 0, r3, c7, c10, 1
     mcr  p15, 0, r3, c7, c5, 0
@@ -42,7 +42,7 @@ prime_privileged_memcpy:
     pop  {r4, r5, r6, pc}
 .size prime_privileged_memcpy, .-prime_privileged_memcpy
 
-/* Prime system calls used by the program. */
+/* 程序使用的 Prime 系统调用。 */
 .global prime_sys_get_lcd
 .type prime_sys_get_lcd, %function
 prime_sys_get_lcd:
@@ -64,7 +64,7 @@ prime_sys_get_event:
     str lr, [sp, #-4]!
     svc #0x1003f
 
-    /* The SVC return value is kept in r0: 1=event, 0=no event. */
+    /* SVC 返回值保留在 r0：1=有事件，0=无事件。 */
 
 .size prime_sys_get_lcd, .-prime_sys_get_lcd
 .size prime_sys_sleep, .-prime_sys_sleep

@@ -3,8 +3,8 @@
 > ⚠️ **AI 生成 / 辅助创作：DeepSeek V4.1 Flash**（LCD 已人工审查）
 
 Nbprime 组织的**基础设施层**：为 HP Prime G1（ARM926EJ-S / ARMv5TEJ，软浮点）
-提供**离线、可复现**的交叉编译环境，供 `prime-tcc/`、`app-collection/` 使用。
-不承载业务代码。版本基线与校验和见 [VERSIONS.md](VERSIONS.md)。
+提供**离线、可复现**的交叉编译环境，并以 `sdk/` 承载所有 Prime 用户程序的
+**C 核心库**。不承载业务代码。版本基线与校验和见 [VERSIONS.md](VERSIONS.md)。
 
 ## 快速开始（开箱即用）
 
@@ -14,8 +14,7 @@ make bootstrap     # 一条龙：获取 .deb（如需）→ setup → verify
 source scripts/env.sh
 ```
 
-`make bootstrap` 在缺少 `armtc/*.deb` 时会自动从 apt 源获取（实测取到的
-`binutils-arm-none-eabi` 版本与 VERSIONS.md 基线一致：`2.45.50.20251209-1ubuntu1+23build1`）。
+`make bootstrap` 在缺少 `armtc/*.deb` 时会自动从 apt 源获取。
 
 单独执行：
 
@@ -30,7 +29,7 @@ make host-check    # 主机（PC）工具链基线：宿主 gcc/make/python3/bin
 
 | 方式 | 做法 | 适用 |
 |---|---|---|
-| **A. 仓库内置**（推荐，开箱即用） | `make bootstrap`（缺 `.deb` 时自动从 apt 源获取） | 与基线一致（实测取到的包版本与 VERSIONS.md 相同） |
+| **A. 仓库内置**（推荐，开箱即用） | `make bootstrap`（缺 `.deb` 时自动从 apt 源获取） | 与基线一致 |
 | B. 系统包 | `apt install gcc-arm-none-eabi binutils-arm-none-eabi libnewlib-arm-none-eabi libnewlib-dev` | 快速试编译；版本低于基线 |
 | C. ARM 官方工具链 | 解压官方 tarball 并加 `bin/` 到 `PATH` | 自洽布局，无需包装层 |
 
@@ -53,10 +52,13 @@ toolchain/
 │   ├── check-host.sh            # 主机（PC）工具链基线
 │   └── env.sh                   # 环境导出（bash source 或 make env）
 ├── examples/
-│   └── api-probe/               # 接口示例：API/ABI 探针（PC 与 ARM 两端编译）
-├── sdk/                         # C 核心库：用户程序头文件 / 链接脚本 /
-│                                #   SVC 包装（prime_input.S）/ 输入钩子（prime_hook.*）
-├── armtc/                       # *.deb（缓存）+ root/（解包结果，约 3.4GB）
+│   ├── api-probe/               # 接口示例：API/ABI 探针（PC 与 ARM 两端编译）
+│   └── hello-arm/               # 接口示例：工具链最小闭环
+├── templates/
+│   └── app.mk                   # 应用 Makefile 的公共片段（app-collection 的工程 include 它）
+├── sdk/                         # C 核心库（唯一权威源）：用户程序头文件与运行时实现 /
+│                                #   链接脚本 / SVC 包装（prime_input.S）/ 输入钩子（prime_hook.*）
+├── armtc/                       # *.deb（缓存）+ root/（解包结果）
 └── armtc-tools/                 # 生成的包装层（不入库，make tools 可重建）
 ```
 
@@ -83,21 +85,27 @@ toolchain/
 | `make setup` / `make setup --force-unpack` | 解包（可选强制）+ 修权限 + 生成包装层 |
 | `make tools` | 只重建包装层 |
 | `make verify` | 21 项验证；有失败即非零退出 |
-| `make host-check` | 主机（PC）工具链基线 |
+| `make host-check` | 主机（PC）工具链基线（脚本内自动排除 `armtc-tools`，可在 `source env.sh` 后直接跑） |
 | `make env` / `make versions` | 打印可 eval 的环境 / 版本矩阵 |
 | `make clean-tools` | 删除可再生的包装层 |
+
+## C 核心库（`sdk/`）
+
+`sdk/` 是所有 Prime 用户程序的公共构建件（详见 [sdk/README.md](sdk/README.md)）：
+`prime.h`/`stdbool.h`、`hp_*.h` 与已就位的 `hp_*.c`、链接脚本 `prime_dyn.ld`、
+SVC 包装 `prime_input.S`、输入钩子 `prime_hook.*`。
 
 ## 接口示例（API/ABI 探针）
 
 `examples/api-probe/` 用**同一份 `probe.c`** 在宿主 gcc 与 ARM 交叉 gcc 下编译，
-覆盖 `prime-tcc` 的全部 13 个公开头文件并做编译期 ABI 断言：
+覆盖 C 核心库的全部 13 个公开头文件并做编译期 ABI 断言：
 
 ```bash
 source toolchain/scripts/env.sh
 make -C toolchain/examples/api-probe check    # 两端应 0 警告通过
 ```
 
-只做**编译**验证（不链接）：两侧 `hp_*` 实现不在本仓库，见
+只做**编译**验证（不链接）：`hp_*` 的已就位实现在 `sdk/`，缺失部分见
 [../prime-tcc/STATUS.md](../prime-tcc/STATUS.md)。
 
 ## 典型使用
@@ -117,6 +125,10 @@ arm-none-eabi-gcc -mcpu=arm926ej-s -marm -mfloat-abi=soft --specs=nosys.specs -o
 - 宿主：Debian/Ubuntu（`dpkg`；无则退回 `ar`+`tar`）、`make`、`bash`、`binutils`
 - 目标工具链见 [VERSIONS.md §1](VERSIONS.md)；**不需要**宿主另装 `gcc-arm-none-eabi`
 - 只覆盖 **ARMv5TEJ / 软浮点**（Prime G1）一组目标参数
+- `source scripts/env.sh` 后 `PATH` 最前的 `armtc-tools/` 提供裸名 `as`/`ld`
+  （ARM 版，GCC driver 按裸名查找所需），因此**宿主**编译（如直接 `gcc x.c`）
+  会被劫持（`unrecognised emulation mode: elf_x86_64`）；`make host-check` 已在
+  脚本内自动排除该目录，宿主编译请另开干净 PATH 的终端
 - `armtc/root/`、`armtc/*.deb`、`armtc-tools/` 都是本地生成物（见 `.gitignore`）
 - 工具链本身**不需要**网络
 
@@ -125,4 +137,4 @@ arm-none-eabi-gcc -mcpu=arm926ej-s -marm -mfloat-abi=soft --specs=nosys.specs -o
 1. 任何"可用/已修复"的结论必须附 `make verify` 的真实输出；
 2. 升级工具链须同步更新 `VERSIONS.md` 的版本与 SHA256；
 3. **不维护** `nbprime/`（已废弃，不作构建来源）；
-4. 改包装层或目标参数后，复验 `prime-tcc/`、`app-collection/`。
+4. 改包装层、目标参数或 `sdk/` 后，复验 `prime-tcc/`、`app-collection/`。

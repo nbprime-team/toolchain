@@ -14,6 +14,12 @@
 #
 set -uo pipefail
 
+# 宿主探测必须排除交叉工具链包装层：`source scripts/env.sh` 后 PATH 最前的
+# armtc-tools/ 提供裸名 as/ld（ARM 版，GCC driver 按裸名查找所需），会劫持
+# 宿主 gcc 的汇编/链接步骤并报 "unrecognised emulation mode: elf_x86_64"。
+PATH="$(printf '%s' "$PATH" | tr ':' '\n' | grep -v '/armtc-tools' | paste -sd: -)"
+export PATH
+
 PASS=0
 FAIL=0
 declare -a MISSING=()

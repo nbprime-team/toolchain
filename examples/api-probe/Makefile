@@ -10,13 +10,13 @@
 # 前置：ARM 侧需要工具链在 PATH 中，先执行
 #   source toolchain/scripts/env.sh
 
-API_DIR   ?= $(abspath $(CURDIR)/../../../prime-tcc)
+SDK       ?= $(abspath $(CURDIR)/../../../toolchain)
 CC_PC     ?= cc
 CC_ARM    ?= arm-none-eabi-gcc
 READELF   ?= arm-none-eabi-readelf
 
 WARN      := -Wall -Wextra
-INCLUDES  := -I$(API_DIR)/hp -I$(API_DIR)/rt
+INCLUDES  := -I$(SDK)/sdk
 ARM_FLAGS := -mcpu=arm926ej-s -marm -mfloat-abi=soft -ffreestanding
 
 .PHONY: all check pc arm clean
@@ -38,7 +38,7 @@ check: probe_pc.o probe_arm.o
 	@echo "== 目标（ARM gcc）：probe_arm.o =="
 	@$(READELF) -h probe_arm.o 2>/dev/null | grep -E 'Machine|Flags' || true
 	@echo "两端编译通过；ABI 断言已在编译期检查（见 probe.c 顶部）。"
-	@echo "注意：本示例只做编译验证，不链接（两侧 hp_* 实现见 prime-tcc/STATUS.md）。"
+	@echo "注意：本示例只做编译验证，不链接（hp_* 实现缺失的部分见 prime-tcc/STATUS.md）。"
 
 clean:
 	rm -f probe_pc.o probe_arm.o
