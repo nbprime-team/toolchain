@@ -6,21 +6,31 @@ Nbprime 组织的**基础设施层**：为 HP Prime G1（ARM926EJ-S / ARMv5TEJ�
 提供**离线、可复现**的交叉编译环境，供 `prime-tcc/`、`app-collection/` 使用。
 不承载业务代码。版本基线与校验和见 [VERSIONS.md](VERSIONS.md)。
 
-## 快速开始
+## 快速开始（开箱即用）
 
 ```bash
 cd toolchain
-make setup         # 从 armtc/*.deb 解包 + 修权限 + 生成 armtc-tools 包装层
+make bootstrap     # 一条龙：获取 .deb（如需）→ setup → verify
+source scripts/env.sh
+```
+
+`make bootstrap` 在缺少 `armtc/*.deb` 时会自动从 apt 源获取（实测取到的
+`binutils-arm-none-eabi` 版本与 VERSIONS.md 基线一致：`2.45.50.20251209-1ubuntu1+23build1`）。
+
+单独执行：
+
+```bash
+make fetch-debs    # 仅获取缺失的 .deb
+make setup         # 解包 + 修权限 + 生成包装层
 make verify        # 端到端验证：21 项，全通过才算可用
 make host-check    # 主机（PC）工具链基线：宿主 gcc/make/python3/binutils
-source scripts/env.sh   # 启用（导出 PATH / CROSS_COMPILE / TOOLCHAIN_ROOT）
 ```
 
 ## 安装（三选一）
 
 | 方式 | 做法 | 适用 |
 |---|---|---|
-| **A. 仓库内置**（推荐） | 取得 `armtc/*.deb`（6 个，约 600 MB，不入库）后 `make setup` | 与基线完全一致 |
+| **A. 仓库内置**（推荐，开箱即用） | `make bootstrap`（缺 `.deb` 时自动从 apt 源获取） | 与基线一致（实测取到的包版本与 VERSIONS.md 相同） |
 | B. 系统包 | `apt install gcc-arm-none-eabi binutils-arm-none-eabi libnewlib-arm-none-eabi libnewlib-dev` | 快速试编译；版本低于基线 |
 | C. ARM 官方工具链 | 解压官方 tarball 并加 `bin/` 到 `PATH` | 自洽布局，无需包装层 |
 

@@ -3,7 +3,9 @@
 # toolchain/Makefile —— 本地 ARM 交叉工具链的统一入口
 #
 # 常用：
+#   make bootstrap 开箱即用：获取 .deb（如需）→ setup → verify（一条龙）
 #   make setup    从 armtc/*.deb 重建工具链（解包 + 修权限 + 生成包装层）
+#   make fetch-debs  从 apt 源获取缺失的 .deb（约 600MB，不入库）
 #   make verify   端到端验证工具链（编译/汇编/链接/ELF 架构检查）
 #   make env      打印可 eval 的环境变量
 #   make versions 打印实测版本矩阵
@@ -19,12 +21,21 @@ ROOT          := $(TOOLCHAIN_DIR)/armtc/root
 TOOLS         := $(TOOLCHAIN_DIR)/armtc-tools
 GCC           := $(ROOT)/usr/bin/arm-none-eabi-gcc
 
-.PHONY: all setup tools unpack-only verify env versions host-check clean-tools help
+.PHONY: all bootstrap setup fetch-debs tools unpack-only verify env versions host-check clean-tools help
 
 all: verify
 
 help:
-	@sed -n '3,14p' $(lastword $(MAKEFILE_LIST))
+	@sed -n '3,15p' $(lastword $(MAKEFILE_LIST))
+
+# 开箱即用：缺 .deb 时自动获取，然后安装并验证
+bootstrap:
+	@if [ ! -e "$(ROOT)/usr/bin/arm-none-eabi-gcc" ]; then $(SCRIPTS)/fetch-debs.sh; fi
+	@$(MAKE) --no-print-directory setup
+	@$(MAKE) --no-print-directory verify
+
+fetch-debs:
+	@$(SCRIPTS)/fetch-debs.sh
 
 host-check:
 	@$(SCRIPTS)/check-host.sh
