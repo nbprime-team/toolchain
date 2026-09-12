@@ -29,12 +29,13 @@ static int g_installed;
 __attribute__((noinline, used))
 static void prime_hook_entry(void *event)
 {
-    if (!event) return;
+    if (!event || !g_callback) return;
 
-    /* 在固件的分发上下文中取事件：返回非 0 表示确有事件 */
-    if (prime_sys_get_event(event) && g_callback) {
-        g_callback(event);
-    }
+    /* 填充事件缓冲。注意：**不要**用返回值决定是否回调——suika 的可用实现
+     * 也是在调用后直接解析 event（该 SVC 的返回值不可靠，用它判断会导致
+     * 回调被全部跳过，表现为按键/触摸无响应）。 */
+    prime_sys_get_event(event);
+    g_callback(event);
 }
 
 int prime_hook_install(prime_hook_fn cb)
