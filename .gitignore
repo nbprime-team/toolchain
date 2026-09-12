@@ -1,0 +1,15 @@
+# AI 生成 / 辅助创作：DeepSeek V4.1 Flash（未人工审查）
+#
+# 解包后的工具链本体（约 3.4GB）—— 本地生成，不入库
+armtc/root/
+
+# 上游 Debian 包缓存（单个最大约 486MB，超出 GitHub 单文件上限）—— 不入库
+armtc/*.deb
+
+# 包装层 —— 由 scripts/setup-toolchain.sh 生成，make tools 可重建
+armtc-tools/
+
+# 验证/构建的临时产物（脚本已用临时目录，这里作为兜底）
+*.o
+*.elf
+*.a
