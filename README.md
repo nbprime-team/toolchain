@@ -1,6 +1,6 @@
 # toolchain
 
-> ⚠️ **AI 生成 / 辅助创作：DeepSeek V4.1 Flash**（未人工审查）
+> ⚠️ **AI 生成 / 辅助创作：DeepSeek V4.1 Flash**（LCD 已人工审查）
 
 Nbprime 组织的**基础设施层**：为 HP Prime G1（ARM926EJ-S / ARMv5TEJ，软浮点）
 提供**离线、可复现**的交叉编译环境，供 `prime-tcc/`、`app-collection/` 使用。
