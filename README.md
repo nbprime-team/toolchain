@@ -54,6 +54,8 @@ toolchain/
 │   └── env.sh                   # 环境导出（bash source 或 make env）
 ├── examples/
 │   └── api-probe/               # 接口示例：API/ABI 探针（PC 与 ARM 两端编译）
+├── sdk/                         # C 核心库：用户程序头文件 / 链接脚本 /
+│                                #   SVC 包装（prime_input.S）/ 输入钩子（prime_hook.*）
 ├── armtc/                       # *.deb（缓存）+ root/（解包结果，约 3.4GB）
 └── armtc-tools/                 # 生成的包装层（不入库，make tools 可重建）
 ```
