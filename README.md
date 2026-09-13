@@ -53,11 +53,15 @@ toolchain/
 │   └── env.sh                   # 环境导出（bash source 或 make env）
 ├── examples/
 │   ├── api-probe/               # 接口示例：API/ABI 探针（PC 与 ARM 两端编译）
-│   └── hello-arm/               # 接口示例：工具链最小闭环
+│   ├── hello-arm/               # 接口示例：工具链最小闭环
+│   └── app-common/              # 应用公共运行支撑（app-collection 的工程 include 它）
 ├── templates/
 │   └── app.mk                   # 应用 Makefile 的公共片段（app-collection 的工程 include 它）
-├── sdk/                         # C 核心库（唯一权威源）：用户程序头文件与运行时实现 /
-│                                #   链接脚本 / SVC 包装（prime_input.S）/ 输入钩子（prime_hook.*）
+├── sdk/                         # C 核心库（唯一权威源），按抽象层次分三层：
+│   ├── include/                 #   L0 契约层：公共头（prime.h、stdbool.h、hp_*.h、prime_hook.h）
+│   ├── src/                     #   L1 实现层：hp_*.c、prime_hook.c
+│   ├── platform/                #   L2 平台层：prime_input.S（SVC 包装）、prime_dyn.ld（链接脚本）
+│   └── docs/                    #   文档：hook_abi.md
 ├── armtc/                       # *.deb（缓存）+ root/（解包结果）
 └── armtc-tools/                 # 生成的包装层（不入库，make tools 可重建）
 ```
@@ -91,9 +95,20 @@ toolchain/
 
 ## C 核心库（`sdk/`）
 
-`sdk/` 是所有 Prime 用户程序的公共构建件（详见 [sdk/README.md](sdk/README.md)）：
-`prime.h`/`stdbool.h`、`hp_*.h` 与已就位的 `hp_*.c`、链接脚本 `prime_dyn.ld`、
-SVC 包装 `prime_input.S`、输入钩子 `prime_hook.*`。
+`sdk/` 是所有 Prime 用户程序的公共构建件（详见 [sdk/README.md](sdk/README.md)），
+按抽象层次分三层 + 文档：
+
+| 层 | 目录 | 内容 |
+|---|---|---|
+| L0 契约层 | `include/` | `prime.h`、`stdbool.h`、`prime_hook.h`、`hp_*.h` |
+| L1 实现层 | `src/` | `hp_rt.c`、`hp_string.c`、`hp_math.c`、`hp_gfx.c`、`hp_input.c`、`prime_hook.c` |
+| L2 平台层 | `platform/` | `prime_input.S`（SVC 包装）、`prime_dyn.ld`（链接脚本） |
+| 文档 | `docs/` | `hook_abi.md` |
+
+引用：`-I$(SDK)/sdk/include`、`-T$(SDK)/sdk/platform/prime_dyn.ld`。
+
+> ⚠️ 各模块的实现缺漏（108 个 `hp_*` 函数、多个整模块无 `.c`）已逐条登记在
+> [sdk/README.md §3](sdk/README.md)。
 
 ## 接口示例（API/ABI 探针）
 

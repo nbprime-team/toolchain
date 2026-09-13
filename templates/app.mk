@@ -32,17 +32,17 @@ ARCHFLAGS ?= -mcpu=arm926ej-s -marm -mfloat-abi=soft
 CFLAGS   ?= $(ARCHFLAGS) -fPIC -ffreestanding -fno-strict-aliasing -fno-builtin \
             -fno-stack-protector -fno-unwind-tables -fno-asynchronous-unwind-tables \
             -O2 -Wall -Wextra
-CFLAGS   += -I$(SDK)/sdk
+CFLAGS   += -I$(SDK)/sdk/include
 
 LDFLAGS  ?= -shared -nostdlib -nodefaultlibs -nostartfiles \
             -Wl,-Bsymbolic -Wl,--no-undefined -Wl,--build-id=none \
             -Wl,-z,norelro -Wl,-z,max-page-size=0x1000 -Wl,--hash-style=sysv
-LDFLAGS  += -Wl,-T,$(SDK)/sdk/prime_dyn.ld
+LDFLAGS  += -Wl,-T,$(SDK)/sdk/platform/prime_dyn.ld
 
 LDLIBS   ?= -lgcc
 
 # ---- 公共构件规则 ----
-$(TARGET).elf: $(OBJS) $(SDK)/sdk/prime_dyn.ld
+$(TARGET).elf: $(OBJS) $(SDK)/sdk/platform/prime_dyn.ld
 	$(ARMCC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJS) $(LDLIBS)
 
 # 通用 C 编译规则（不能用 make 内置的 %.o: %.c —— 那会用宿主 cc）
@@ -50,10 +50,10 @@ $(TARGET).elf: $(OBJS) $(SDK)/sdk/prime_dyn.ld
 	$(ARMCC) $(CFLAGS) -c -o $@ $<
 
 # SDK 侧公共构件
-prime_input.o: $(SDK)/sdk/prime_input.S
+prime_input.o: $(SDK)/sdk/platform/prime_input.S
 	$(ARMCC) $(CFLAGS) -c -o $@ $<
 
-prime_hook.o: $(SDK)/sdk/prime_hook.c $(SDK)/sdk/prime_hook.h
+prime_hook.o: $(SDK)/sdk/src/prime_hook.c $(SDK)/sdk/include/prime_hook.h
 	$(ARMCC) $(CFLAGS) -c -o $@ $<
 
 # ---- 目标 ----

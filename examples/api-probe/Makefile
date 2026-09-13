@@ -16,7 +16,7 @@ CC_ARM    ?= arm-none-eabi-gcc
 READELF   ?= arm-none-eabi-readelf
 
 WARN      := -Wall -Wextra
-INCLUDES  := -I$(SDK)/sdk
+INCLUDES  := -I$(SDK)/sdk/include
 ARM_FLAGS := -mcpu=arm926ej-s -marm -mfloat-abi=soft -ffreestanding
 
 .PHONY: all check pc arm clean
