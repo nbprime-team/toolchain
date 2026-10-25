@@ -26,6 +26,10 @@ gh release download v1 -R nbprime-team/toolchain -p 'SHA256SUMS' -D armtc
 make setup && make verify
 ```
 
+> 资产名说明：GitHub 不接受文件名中的 `%`，因此 Release 里把上游文件名中的 `%3a`
+> （Debian 对 `:` 的编码）写作 `-`，例如 `gcc-arm-none-eabi_15-14.2.rel1-1_amd64.deb`。
+> 包内容与 `SHA256SUMS` 里的校验和不受影响。
+
 单独执行：
 
 ```bash

@@ -22,6 +22,10 @@ gh release download v1 -R nbprime-team/toolchain -p 'SHA256SUMS' -D armtc
 (cd armtc && sha256sum -c SHA256SUMS)
 ```
 
+> 资产名把上游文件名中的 `%3a` 写作 `-`（GitHub 不接受 `%`），因此
+> `gcc-arm-none-eabi_15-14.2.rel1-1_amd64.deb` 对应的上游包是 `15:14.2.rel1-1`。
+> 校验和与下表一致，包内容不受影响。
+
 | 包 | 版本 | 架构 | SHA256 |
 |---|---|---|---|
 | `binutils-arm-none-eabi` | `2.45.50.20251209-1ubuntu1+23build1` | amd64 | `abccb894e824f007bd2f969e2164d164d308badf507910f105c3c3641345b416` |
