@@ -38,7 +38,7 @@ check: probe_pc.o probe_arm.o
 	@echo "== 目标（ARM gcc）：probe_arm.o =="
 	@$(READELF) -h probe_arm.o 2>/dev/null | grep -E 'Machine|Flags' || true
 	@echo "两端编译通过；ABI 断言已在编译期检查（见 probe.c 顶部）。"
-	@echo "注意：本示例只做编译验证，不链接（hp_* 实现缺失的部分见 prime-tcc/STATUS.md）。"
+	@echo "注意：本示例只做编译验证，不链接（完整实现见 toolchain/sdk/src/）。"
 
 clean:
 	rm -f probe_pc.o probe_arm.o

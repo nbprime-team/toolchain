@@ -30,8 +30,18 @@
 #ifndef PRIME_HOOK_H
 #define PRIME_HOOK_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* 由 prime_input.S 提供：SVC #0x1003f 的包装（在回调内调用） */
 int prime_sys_get_event(void *event);
+
+/* 由 prime_input.S 提供：SVC #0x10008 的包装（主循环节流用） */
+void prime_sys_sleep(unsigned int ms);
+
+/* 由 prime_input.S 提供：SVC #0x1008D 的包装（取 LCD 结构指针） */
+void *prime_sys_get_lcd(void);
 
 /* 事件回调：event 指向固件的 ui_event_prime_s 缓冲；回调需先调用
  * prime_sys_get_event(event) 填充它。 */
@@ -45,5 +55,9 @@ void prime_hook_remove(void);
 
 /* 是否已安装 */
 int  prime_hook_active(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* PRIME_HOOK_H */
