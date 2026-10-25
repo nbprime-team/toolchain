@@ -13,6 +13,15 @@
 全部为 Debian/Ubuntu 系统包，解包到 `armtc/root/` 即构成完整工具链。**这些包
 体积合计约 600 MB，解包后约 3.4 GB，不纳入版本控制**（见 `.gitignore`）。
 
+**基线包发布在 GitHub Release**（tag `v1`，资产为 6 个 `.deb` + `SHA256SUMS`），
+与下表逐字节一致；apt 源只保留最新版，不作为复现依据：
+
+```bash
+gh release download v1 -R nbprime-team/toolchain -p '*.deb' -D armtc
+gh release download v1 -R nbprime-team/toolchain -p 'SHA256SUMS' -D armtc
+(cd armtc && sha256sum -c SHA256SUMS)
+```
+
 | 包 | 版本 | 架构 | SHA256 |
 |---|---|---|---|
 | `binutils-arm-none-eabi` | `2.45.50.20251209-1ubuntu1+23build1` | amd64 | `abccb894e824f007bd2f969e2164d164d308badf507910f105c3c3641345b416` |

@@ -16,6 +16,16 @@ source scripts/env.sh
 
 `make bootstrap` 在缺少 `armtc/*.deb` 时会自动从 apt 源获取。
 
+**需要与 `VERSIONS.md` 逐字节一致的基线时，改用 Release 资产**——apt 源只保留最新版，
+日后可能漂移；Release 里的 6 个 `.deb` 与该文件记录的 SHA256 完全一致，并附带 `SHA256SUMS`：
+
+```bash
+gh release download v1 -R nbprime-team/toolchain -p '*.deb' -D armtc
+gh release download v1 -R nbprime-team/toolchain -p 'SHA256SUMS' -D armtc
+(cd armtc && sha256sum -c SHA256SUMS)
+make setup && make verify
+```
+
 单独执行：
 
 ```bash
@@ -30,6 +40,7 @@ make host-check    # 主机（PC）工具链基线：宿主 gcc/make/python3/bin
 | 方式 | 做法 | 适用 |
 |---|---|---|
 | **A. 仓库内置**（推荐，开箱即用） | `make bootstrap`（缺 `.deb` 时自动从 apt 源获取） | 与基线一致 |
+| **A′. Release 资产**（可复现） | `gh release download v1 -R nbprime-team/toolchain -p '*.deb' -D armtc` 后 `make setup`（见上） | 与基线**逐字节**一致 |
 | B. 系统包 | `apt install gcc-arm-none-eabi binutils-arm-none-eabi libnewlib-arm-none-eabi libnewlib-dev` | 快速试编译；版本低于基线 |
 | C. ARM 官方工具链 | 解压官方 tarball 并加 `bin/` 到 `PATH` | 自洽布局，无需包装层 |
 
