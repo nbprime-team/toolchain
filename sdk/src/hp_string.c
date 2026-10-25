@@ -1,10 +1,10 @@
 /*
- * hp_string.c —— 字符串工具（见 hp_string.h）。
- * 自包含的纯 C，可在计算器上被 TCC 编译。
+ * hp_string.c -- 字符串工具（见 hp_string.h）。
+ * 自包含的纯 C，可在计算器上用 TCC 编译。
  */
 #include "hp_string.h"
 
-/* ---- 内存辅助（外部自 hp_rt.c） ---- */
+/* ---- 内存辅助函数（来自 hp_rt.c 的外部符号） ---- */
 extern size_t strlen(const char *s);
 extern int    strcmp(const char *a, const char *b);
 extern int    strncmp(const char *a, const char *b, size_t n);
@@ -111,7 +111,7 @@ void *memchr(const void *s, int c, size_t n)
     return NULL;
 }
 
-/* ---- 拷贝 / 拼接 ---- */
+/* ---- 复制 / 拼接 ---- */
 
 char *strncpy(char *dst, const char *src, size_t n)
 {
@@ -183,7 +183,7 @@ size_t strlcat(char *dst, const char *src, size_t n)
     return dlen + strlen(src);
 }
 
-/* ---- 忽略大小写比较 ---- */
+/* ---- 大小写不敏感比较 ---- */
 
 int strcasecmp(const char *a, const char *b)
 {
@@ -350,7 +350,7 @@ void str_tolower(char *s)
     while (*s) { *s = tolower(*s); s++; }
 }
 
-/* ---- 分配 ---- */
+/* ---- 内存分配 ---- */
 
 char *strdup(const char *s)
 {
@@ -387,4 +387,232 @@ char *strrev(char *s)
         i++;
     }
     return s;
+}
+
+/* ---- double 格式化 ----
+ * ftoa(d, buf, dec)：两种模式。
+ *   dec >= 0：传统定点——恰好 `dec` 位小数（0..15）。
+ *   dec <  0：AUTO——显示实际计算出的值，不补零：整数值
+ *             原样打印（"8"、"1234567890123456784"），非整数
+ *             只保留有意义的小数位（"0.1"、"0.333333333333333"，
+ *             去掉末尾零），而 |d| >= 1e18 或 < 1e-15 时转为
+ *             科学计数法（"1e+20"、"1.234567890123457e+22"），因此旧的
+ *             ">1e19" 上限已取消。buf >= 40 字节。返回 buf。
+ *             NaN -> "NaN"，+-INF -> "INF"/"-INF"。仅使用软浮点
+ *             double 运算 + u64 转换（由 rt_aeabi.o 提供）。 */
+char *ftoa(double d, char *buf, int dec)
+{
+    char tmp[24];
+    char *out = buf;
+    unsigned long long ip, q;
+    double f, m;
+    int i, n = 0, k, e;
+
+    if (d != d) {                       /* NaN */
+        strcpy(buf, "NaN");
+        return out;
+    }
+    if (d > 1.0e308) { strcpy(buf, "INF"); return out; }
+    if (d < -1.0e308) { strcpy(buf, "-INF"); return out; }
+    if (d < 0.0) { *buf++ = '-'; d = -d; }
+    if (d == 0.0) {
+        *buf++ = '0';
+        if (dec > 0) {
+            *buf++ = '.';
+            for (k = 0; k < dec; k++)
+                *buf++ = '0';
+        }
+        *buf = 0;
+        return out;
+    }
+
+    if (dec < 0) {
+        /* ---- AUTO：你计算出的即你看到的 ---- */
+        m = d;
+        e = 0;
+        while (m >= 10.0) { m /= 10.0; e++; }
+        while (m < 1.0)   { m *= 10.0; e--; }
+        if (e >= 18 || e <= -16) {
+            /* 科学计数法：16 位有效数字，去掉末尾零 */
+            char dig[16];
+            int nd = 16;
+            for (i = 0; i < 16; i++) {
+                int digit = (int)m;
+                if (digit > 9) digit = 9;
+                dig[i] = (char)('0' + digit);
+                m = (m - (double)digit) * 10.0;
+            }
+            while (nd > 1 && dig[nd - 1] == '0')
+                nd--;
+            *buf++ = dig[0];
+            if (nd > 1) {
+                *buf++ = '.';
+                for (i = 1; i < nd; i++)
+                    *buf++ = dig[i];
+            }
+            *buf++ = 'e';
+            if (e < 0) { *buf++ = '-'; e = -e; }
+            else       *buf++ = '+';
+            if (e >= 100) {
+                *buf++ = (char)('0' + e / 100);
+                *buf++ = (char)('0' + (e / 10) % 10);
+            } else if (e >= 10) {
+                *buf++ = (char)('0' + e / 10);
+            } else {
+                *buf++ = '0';
+            }
+            *buf++ = (char)('0' + e % 10);
+            *buf = 0;
+            return out;
+        }
+        if (d == (double)(unsigned long long)d) {
+            /* 整数值：精确整数原样输出，无小数点 */
+            ip = (unsigned long long)d;
+            do {
+                tmp[n++] = (char)('0' + (int)(ip % 10));
+                q = ip / 10;
+                ip = q;
+            } while (ip != 0);
+            while (n > 0)
+                *buf++ = tmp[--n];
+            *buf = 0;
+            return out;
+        }
+        /* 非整数：整数部分 + 最多 15 位真实小数，去掉末尾零
+         * （1/3 -> 0.333333333333333，0.1 -> 0.1） */
+        ip = (unsigned long long)d;
+        do {
+            tmp[n++] = (char)('0' + (int)(ip % 10));
+            q = ip / 10;
+            ip = q;
+        } while (ip != 0);
+        while (n > 0)
+            *buf++ = tmp[--n];
+        *buf++ = '.';
+        f = d - (double)(unsigned long long)d;
+        for (i = 0; i < 15; i++) {
+            int digit;
+            f *= 10.0;
+            digit = (int)f;
+            if (digit > 9) digit = 9;
+            *buf++ = (char)('0' + digit);
+            f -= (double)digit;
+            if (f == 0.0)
+                break;
+        }
+        while (buf[-1] == '0')          /* 去掉补零的小数位 */
+            buf--;
+        if (buf[-1] == '.')
+            buf--;
+        *buf = 0;
+        return out;
+    }
+
+    if (dec > 15) dec = 15;
+
+    if (dec > 0) {                       /* 四舍五入到最近 */
+        double scale = 1.0;
+        for (k = 0; k < dec; k++)
+            scale *= 10.0;
+        d += 0.5 / scale;
+    }
+    if (d >= 1.0e19) {                   /* 整数部分超出 u64 范围 */
+        strcpy(buf, ">1e19");
+        return out;
+    }
+    ip = (unsigned long long)d;          /* 整数部分（精确，< 1e19） */
+    f = d - (double)ip;
+
+    do {                                 /* 各位数字，倒序 */
+        tmp[n++] = (char)('0' + (int)(ip % 10));
+        q = ip / 10;
+        ip = q;
+    } while (ip != 0);
+    while (n > 0)
+        *buf++ = tmp[--n];
+
+    if (dec > 0) {
+        *buf++ = '.';
+        for (i = 0; i < dec; i++) {
+            int digit;
+            f *= 10.0;
+            digit = (int)f;
+            *buf++ = (char)('0' + digit);
+            f -= (double)digit;
+        }
+    }
+    *buf = 0;
+    return out;
+}
+
+/* dtoa 是 ftoa 的常用别名 */
+char *dtoa(double d, char *buf, int dec)
+{
+    return ftoa(d, buf, dec);
+}
+
+
+/* ---- double 解析（strtod/atof） ----
+ * strtod 解析：  [ws] [+-] digits [. digits] [eE [+-] digits]
+ * 以及单词 "inf"/"infinity"/"nan"（大小写不敏感）。endptr（若给出）
+ * 被设为第一个未消费的字符；若未发生转换，则置为 s 并返回 0.0
+ * （C 标准）。纯 double 运算——
+ * 通过 rt_aeabi.o 使用软浮点。 */
+double strtod(const char *s, char **endptr)
+{
+    const char *p = s;
+    double v = 0.0, frac = 0.1, sign = 1.0, esign = 1.0;
+    int e = 0, nd = 0, ei = 0;
+
+    while (*p == ' ' || *p == '\t' || *p == '\n' || *p == '\r')
+        p++;
+    if (*p == '+') p++;
+    else if (*p == '-') { sign = -1.0; p++; }
+
+    /* inf / infinity / nan */
+    if ((p[0] == 'i' || p[0] == 'I') && (p[1] == 'n' || p[1] == 'N') &&
+        (p[2] == 'f' || p[2] == 'F')) {
+        p += 3;
+        if ((p[0] == 'i' || p[0] == 'I') && (p[1] == 'n' || p[1] == 'N') &&
+            (p[2] == 'i' || p[2] == 'I') && (p[3] == 't' || p[3] == 'T') &&
+            (p[4] == 'y' || p[4] == 'Y'))
+            p += 5;
+        if (endptr) *endptr = (char *)p;
+        return sign * 1.0e300;
+    }
+    if ((p[0] == 'n' || p[0] == 'N') && (p[1] == 'a' || p[1] == 'A') &&
+        (p[2] == 'n' || p[2] == 'N')) {
+        p += 3;
+        if (endptr) *endptr = (char *)p;
+        return 0.0 / 0.0;                 /* NaN */
+    }
+
+    while (*p >= '0' && *p <= '9') { v = v * 10.0 + (*p - '0'); p++; nd++; }
+    if (*p == '.') {
+        p++;
+        while (*p >= '0' && *p <= '9') {
+            v += (*p - '0') * frac; frac *= 0.1; p++; nd++;
+        }
+    }
+    if (!nd) {
+        if (endptr) *endptr = (char *)s;   /* 未发生转换 */
+        return 0.0;
+    }
+    if (*p == 'e' || *p == 'E') {
+        p++;
+        if (*p == '+') p++;
+        else if (*p == '-') { esign = -1.0; p++; }
+        while (*p >= '0' && *p <= '9') { e = e * 10 + (*p - '0'); p++; ei++; }
+        if (!ei) esign = 1.0;              /* 'e' 后无数字：忽略 */
+    }
+    if (endptr) *endptr = (char *)p;
+    if (esign < 0.0) e = -e;
+    while (e > 0) { v *= 10.0; e--; }
+    while (e < 0) { v *= 0.1; e++; }
+    return sign * v;
+}
+
+double atof(const char *s)
+{
+    return strtod(s, 0);
 }

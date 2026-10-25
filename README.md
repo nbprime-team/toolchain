@@ -54,6 +54,8 @@ toolchain/
 ├── examples/
 │   ├── api-probe/               # 接口示例：API/ABI 探针（PC 与 ARM 两端编译）
 │   ├── hello-arm/               # 接口示例：工具链最小闭环
+│   ├── keys/                    # 接口示例：原生按键钩子（显示原始字段，核对 ABI）
+│   ├── touch/                   # 接口示例：原生触摸钩子（显示坐标与动作）
 │   └── app-common/              # 应用公共运行支撑（app-collection 的工程 include 它）
 ├── templates/
 │   └── app.mk                   # 应用 Makefile 的公共片段（app-collection 的工程 include 它）

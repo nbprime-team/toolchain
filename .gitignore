@@ -13,3 +13,6 @@ armtc-tools/
 *.o
 *.elf
 *.a
+
+# 可上传包（.hpappdir/）是交付物 —— 其中的 ELF 要入库，用户拷目录即可运行
+!*/*/*.hpappdir/my_app.elf
