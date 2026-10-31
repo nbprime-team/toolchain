@@ -16,3 +16,7 @@ armtc-tools/
 
 # 可上传包（.hpappdir/）是交付物 —— 其中的 ELF 要入库，用户拷目录即可运行
 !*/*/*.hpappdir/my_app.elf
+
+# unifont 生成物（由 fontgen.py 从 .hex 生成）
+sdk/src/unifont/unifont_font.c
+sdk/src/unifont/unifont_font.h
